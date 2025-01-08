@@ -11,5 +11,5 @@ router.register(r'Users', UserViewSet, 'users')
 app_name = "core"
 
 urlpatterns = [
-    path('api/v1', include(router.urls) )
+    path('api/v1/', include(router.urls) )
 ]
