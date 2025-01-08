@@ -15,10 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from rest_framework.documentation import include_docs_urls
 from django.urls import path
 from django.urls import include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('core.urls')),  # Include your app's URLs here
-]
+    path('', include('core.urls')),
+    path('docs/', include_docs_urls(title='API Documentation'))
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

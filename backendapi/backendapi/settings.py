@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     # Third Party
     'rest_framework',
     'corsheaders',
+    'coreapi',
+    'rest_framework_simplejwt',
 
     # My Apps
     'core',
@@ -52,7 +54,9 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'core.CustomUser'
 
 # Cors Authorization 
-CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173'
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -133,7 +137,22 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS' : 'rest_framework.schemas.coreapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}

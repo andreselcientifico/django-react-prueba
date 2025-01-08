@@ -27,6 +27,10 @@ class ButtonClick(models.Model):
 
 # Configuración de la landing page
 class LandingPageConfig(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
     logo = models.ImageField(upload_to='logos/')
+
+    def __str__(self):
+        return self.title

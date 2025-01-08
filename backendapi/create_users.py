@@ -1,4 +1,12 @@
+import os
+import django
+
+# Configura Django para que use los settings correctos
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backendapi.settings')
+django.setup()
+
 from django.contrib.auth import get_user_model
+
 User = get_user_model()
 
 # Crear usuario admin
