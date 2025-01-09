@@ -1,0 +1,105 @@
+import React, { useEffect, useState } from 'react';
+import { Button, Table, Row, Col, Card, Spin } from 'antd'; // Agregado Spin para mostrar carga
+import { Bar } from '@ant-design/charts';
+import { useNavigate } from 'react-router-dom';
+import { LogoutOutlined } from '@ant-design/icons';
+
+const AdminConsole = () => {
+  const [userData, setUserData] = useState([]);  // Para los datos de usuarios
+  const [buttonStats, setButtonStats] = useState({ button1: 0, button2: 0 });  // Para las estadísticas de los botones
+  const [loading, setLoading] = useState(true);  // Para manejar la carga de datos
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/v1/user-stats/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          },
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setUserData(data.userData);  // Configura los datos de los usuarios
+          setButtonStats(data.buttonStats);  // Configura las estadísticas de los botones
+        } else {
+          console.error('Error al cargar los datos');
+        }
+      } catch (error) {
+        console.error('Hubo un error en la solicitud:', error);
+      } finally {
+        setLoading(false);  // Desactiva el estado de carga cuando los datos se hayan cargado
+      }
+    };
+
+    fetchData();
+  }, []);  // La solicitud solo se realiza una vez cuando se monta el componente
+
+  const columns = [
+    { title: 'Nombre', dataIndex: 'name', key: 'name' },
+    { title: 'Inicio de Sesión', dataIndex: 'loginDate', key: 'loginDate' },
+    { title: 'Tiempo', dataIndex: 'sessionTime', key: 'sessionTime' },
+    { title: 'Botón 1', dataIndex: 'button1', key: 'button1' },
+    { title: 'Botón 2', dataIndex: 'button2', key: 'button2' },
+  ];
+
+  const chartData = [
+    { button: 'Botón 1', clicks: buttonStats.button1 },
+    { button: 'Botón 2', clicks: buttonStats.button2 },
+  ];
+
+  const config = {
+    data: chartData,
+    xField: 'button',
+    yField: 'clicks',
+    columnWidthRatio: 0.8,
+  };
+
+  if (loading) {
+    return <Spin size="large" />; // Muestra un spinner mientras se cargan los datos
+  };
+
+  const handleLogout = async () => {
+    await fetch('http://localhost:8000/api/v1/logout/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${localStorage.getItem('access_token')}`,
+      },
+      body: JSON.stringify({
+        user_id: localStorage.getItem('username'),
+      }),
+    });
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('is_admin');
+    navigate('/');
+  };
+
+  return (
+    <div style={{ padding: '20px', justifyItems: 'start' }}>
+      <Button
+          type="default"
+          style={{ margin: '10px', width: '10%' }}
+          danger
+          onClick={handleLogout}
+        >
+        <LogoutOutlined />
+      </Button>
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
+          <Table columns={columns} dataSource={userData} pagination={false} />
+        </Col>
+        <Col span={8}>
+          <Card title="Gráfica de Botones">
+            <Bar {...config} />
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+export default AdminConsole;

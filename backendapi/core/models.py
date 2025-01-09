@@ -19,15 +19,23 @@ class UserSession(models.Model):
 
 
 # Modelo para registrar los clics de los botones
-class ButtonClick(models.Model):
+class ButtonClickStats(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     button_name = models.CharField(max_length=50)
-    click_time = models.DateTimeField(auto_now_add=True)
+    click_count = models.IntegerField(default=1)
+
+    def increment_click(self):
+        """Incrementa el contador de clics."""
+        self.click_count += 1
+        self.save()
+
+    def __str__(self):
+        return f"{self.user.username} - {self.button_name}: {self.click_count}"
 
 
 # Configuración de la landing page
 class LandingPageConfig(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, unique=True)
     title = models.CharField(max_length=255)
     description = models.TextField()
     logo = models.ImageField(upload_to='logos/')

@@ -1,38 +1,31 @@
-import React, { useState } from 'react';
-import LoginPage from './components/LoginPage';
-import AdminConsole from './components/AdminConsole';
-import UserLandingPage from './components/UserLandingPage';
+import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 
 const App = () => {
-  const [userType, setUserType] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(null); // Estado para verificar si el usuario está logueado
 
-  const handleLogin = (username, password) => {
-    // Lógica para verificar usuario (llamada al backend)
-    if (username === 'admin') {
-      setUserType('admin');
-    } else {
-      setUserType('user');
-    }
-  };
+  useEffect(() => {
+    const checkSession = () => {
+      const accessToken = localStorage.getItem('access_token');
+      if (accessToken) {
+        setIsLoggedIn(true); // Si hay token, está logueado
+      } else {
+        setIsLoggedIn(false); // Si no hay token, no está logueado
+      }
+    };
 
-  const handleButtonClick = (button) => {
-    console.log(`${button} presionado`);
-  };
+    checkSession();
+  }, []);
 
-  if (!userType) {
-    return <LoginPage onLogin={handleLogin} />;
+  if (isLoggedIn === null) {
+    return <div>Loading...</div>; // O alguna animación de carga mientras se verifica la sesión
   }
 
-  return userType === 'admin' ? (
-    <AdminConsole
-      userData={[
-        { key: '1', name: 'Usuario 1', loginDate: '2025-01-01', sessionTime: '15 min', button1: 5, button2: 10 },
-        // Más datos...
-      ]}
-      buttonStats={{ button1: 50, button2: 70 }}
-    />
-  ) : (
-    <UserLandingPage onButtonClick={handleButtonClick} />
+  return (
+    <>
+      {/* Si está logueado, redirige a la página correspondiente */}
+      {isLoggedIn ? <Navigate to="/admin" /> : <Navigate to="/" />}
+    </>
   );
 };
 

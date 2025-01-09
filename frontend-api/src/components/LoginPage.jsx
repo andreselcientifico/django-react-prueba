@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { LoginOutlined } from '@ant-design/icons';
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();  // Usamos el hook useHistory para la redirección
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/token/', {
+      const response = await fetch('http://localhost:8000/api/v1/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -21,17 +22,13 @@ const LoginPage = ({ onLogin }) => {
       });
   
       if (response.ok) {
-        const { access_token, refresh_token, is_admin } = await response.json();
-        console.log('Access Token:', access_token, '\nis_admin', is_admin);
-        // Guarda los tokens en el localStorage
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-  
-        // Llama a la función onLogin para pasar el token
-        onLogin(access_token);
-  
+        const data = await response.json();
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('is_admin', data.is_admin);
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('username', data.user);
         // Redirige dependiendo si es admin o no
-        if (is_admin) {
+        if (data.is_admin) {
           navigate('/admin');  // Página de admin
         } else {
           navigate('/user');  // Página de usuario normal
@@ -66,7 +63,7 @@ const LoginPage = ({ onLogin }) => {
           </Form.Item>
           <Form.Item>
             <Button type="primary" block onClick={handleLogin}>
-              Iniciar Sesión
+            <LoginOutlined />
             </Button>
           </Form.Item>
         </Form>
