@@ -94,13 +94,12 @@ def get_data(request):
 
     try:
         # Obtener el user_id validado
-        user_id = serializer.validated_data['user_id'].replace('-', '')
-        
-        
+        user_id = serializer.validated_data['user_id']
 
         # Buscar la configuración de la landing page
-        landing_page_config = LandingPageConfig.objects.get_or_create(id=user_id)
-        
+        landing_page_config = LandingPageConfig.objects.get(user_id=user_id)
+
+        print(landing_page_config)
         # Construir la URL completa del logo (si existe)
         logo_url = request.build_absolute_uri(landing_page_config.logo.url) if landing_page_config.logo else None
         
@@ -113,6 +112,7 @@ def get_data(request):
 
     except LandingPageConfig.DoesNotExist:
         # Si no existe configuración, devolver valores vacíos
+        print("No existe configuración")
         return Response({
             'title': '',
             'description': '',
@@ -158,36 +158,10 @@ def get_data_users(request):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def post_data(request):
-    try:
-        # Procesar el logo si está en formato Base64
-        logo_data = request.data.get('logo', None)
-        logo_file = None
-
-        if logo_data and logo_data.startswith('data:image'):
-            try:
-                # Separar el formato y los datos de la imagen
-                format, imgstr = logo_data.split(';base64,')
-                # Decodificar la imagen y convertirla en un archivo
-                logo_file = ContentFile(base64.b64decode(imgstr), name=f"logo.{format.split('/')[-1]}")# Obtener la extensión de la imagen (png, jpeg, etc.)
-            except Exception as e:
-                return Response({'error': f'Error al procesar la imagen Base64: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Crear o actualizar la configuración de la página de aterrizaje
-        landing_page_config, created = LandingPageConfig.objects.update_or_create(
-            user_id=request.data.get('user_id'),
-            defaults={
-                'title': request.data.get('title', ''),
-                'description': request.data.get('description', ''),
-                'logo': logo_file if logo_file else None,  # Asignar el archivo procesado si existe
-            }
-        )
-
-        # Responder dependiendo de si se creó o actualizó
-        if created:
-            return Response({'message': 'Configuración creada exitosamente!'}, status=status.HTTP_201_CREATED)
-        else:
-            return Response({'message': 'Configuración actualizada exitosamente!'}, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        # Manejar errores generales
-        return Response({'error': f'Ocurrió un error: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+    serializer = LandingPageConfigSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'message': 'Configuración procesada correctamente!'}, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

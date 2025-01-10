@@ -63,6 +63,7 @@ const UserLandingPage = () => {
     });
 
     if (buttonName === 'button1') {
+      console.log(localStorage.getItem('access_token'))
       await fetch('http://localhost:8000/api/v1/get-data/', {
         method: 'POST',
         headers: {
@@ -70,7 +71,7 @@ const UserLandingPage = () => {
           'Authorization': `Token ${localStorage.getItem('access_token')}`,
         },
         body: JSON.stringify({
-          user_id: localStorage.getItem('user_id'), 
+          user_id : localStorage.getItem('user_id'), 
         }),
       })
       .then(response => response.json())
