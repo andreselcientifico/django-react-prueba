@@ -19,8 +19,8 @@ Antes de comenzar, asegúrate de tener instalados los siguientes programas:
 Clona este repositorio en tu máquina local usando:
 
 ```bash
-git clone <https://github.com/andreselcientifico/django-react-prueba.git>
-cd <django-react-prueba>
+git clone https://github.com/andreselcientifico/django-react-prueba.git
+cd django-react-prueba
 ```
 
 ### 2. Configurar el Backend (Django)

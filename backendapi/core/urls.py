@@ -12,5 +12,6 @@ urlpatterns = [
     path('api/v1/register-button-click/', click, name='click'),
     path('api/v1/get-data/', get_data, name='get-data'),
     path('api/v1/post-data/', post_data, name='post-data'),
-    path('api/v1/logout/', logout, name='logout'),
+    path('api/v1/logout/', logout_user, name='logout'),
+    path('api/v1/get_data_users/', get_data_users, name= 'data_users')
 ]

@@ -25,3 +25,16 @@ class UserSessionSerializer(serializers.ModelSerializer):
         model = UserSession
         fields = '__all__'
         read_only_fields = ['user']
+
+class LandingPageConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LandingPageConfig
+        fields = '__all__'
+        read_only_fields = ['id', 'user']
+
+class GetDataSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField(format='hex', required=True)
+
+class LogoutUserSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField(format='hex', required=True)
+

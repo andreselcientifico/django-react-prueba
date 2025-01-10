@@ -10,12 +10,12 @@ const UserLandingPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const userId = localStorage.getItem('user_id');
+        const token = localStorage.getItem('access_token')
         const response = await fetch('http://localhost:8000/api/v1/verify-token/', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${localStorage.getItem('access_token')}`,
+            'Authorization': `Token ${token}`,
           },
         });
 
@@ -24,10 +24,10 @@ const UserLandingPage = () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Token ${localStorage.getItem('access_token')}`,
+              'Authorization': `Token ${token}`,
             },
             body: JSON.stringify({
-              user_id: userId, 
+              user_id: localStorage.getItem('user_id'), 
             }),
           })
           .then(response => response.json())
@@ -67,21 +67,19 @@ const UserLandingPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('access_token')}`,  // Asegúrate de enviar el token si estás usando JWT
+          'Authorization': `Token ${localStorage.getItem('access_token')}`,
         },
         body: JSON.stringify({
-          user_id: localStorage.getItem('user_id'),
+          user_id: localStorage.getItem('user_id'), 
         }),
       })
-        .then(response => response.json())
-        .then(data => {
-          setConfig(data);
-        })
-        .catch(error => {
-          console.error('Error fetching config:', error);
-        });
-        
-  
+      .then(response => response.json())
+      .then(data => {
+        setConfig(data);
+      })
+      .catch(error => {
+        console.error('Error fetching config:', error);
+      });
     } else if (buttonName === 'button2') {
       try {
         const response = await fetch('http://localhost:8000/api/v1/post-data/', {
@@ -150,7 +148,7 @@ const UserLandingPage = () => {
         'Authorization': `Token ${localStorage.getItem('access_token')}`,
       },
       body: JSON.stringify({
-        username: localStorage.getItem('username'),
+        user_id: localStorage.getItem('user_id'),
       }),
     });
     localStorage.removeItem('access_token');

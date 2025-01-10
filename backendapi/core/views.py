@@ -1,7 +1,6 @@
-from rest_framework import viewsets, status
+from rest_framework import status
 from .serializer import *
 from .models import *
-from rest_framework.views import APIView
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
@@ -29,13 +28,20 @@ def login(request):
     }, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def logout(request):
-    # Obtener el usuario autenticado
-    user = request.data['username']
+def logout_user(request):
+    # Validar los datos usando el serializer
+    serializer = LogoutUserSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Verificar si el usuario tiene una sesión activa
     try:
-        user_session = UserSession.objects.filter(user=user, logout_time__isnull=True).latest('login_time')
+        # Obtener el user_id validado
+        user_id = serializer.validated_data['user_id']
+
+        # Verificar si el usuario tiene una sesión activa
+        user_session = UserSession.objects.filter(user_id=user_id, logout_time__isnull=True).latest('login_time')
+
+        # Actualizar los datos de logout y duración de la sesión
         user_session.logout_time = now()
         user_session.session_duration = user_session.logout_time - user_session.login_time
         user_session.save()
@@ -44,6 +50,9 @@ def logout(request):
 
     except UserSession.DoesNotExist:
         return Response({'error': 'No se encontró una sesión activa para el usuario'}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response({'error': f'Ocurrió un error: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
@@ -77,22 +86,24 @@ def click(request):
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def Usersession(request):
-    user = request.user
-    UserSession.objects.create(user=user)
-
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def get_data(request):
-    try:
-        # Obtener la configuración para el usuario autenticado
-        landing_page_config = LandingPageConfig.objects.get(user=request.user)
-        
-        # Construir la URL completa del logo
-        if landing_page_config.logo:
-            logo_url = request.build_absolute_uri(landing_page_config.logo.url)
+    # Validar los datos usando el serializer
+    serializer = GetDataSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        # Obtener el user_id validado
+        user_id = serializer.validated_data['user_id'].replace('-', '')
+        
+        
+
+        # Buscar la configuración de la landing page
+        landing_page_config = LandingPageConfig.objects.get_or_create(id=user_id)
+        
+        # Construir la URL completa del logo (si existe)
+        logo_url = request.build_absolute_uri(landing_page_config.logo.url) if landing_page_config.logo else None
+        
         # Responder con los datos de configuración
         return Response({
             'title': landing_page_config.title,
@@ -113,12 +124,41 @@ def get_data(request):
         return Response({'error': f'Ocurrió un error: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
+def get_data_users(request):
+    try:
+        # Obtener todos los usuarios que tienen sesiones activas
+        user_sessions = UserSession.objects.all()  # O puedes filtrarlo según tu lógica
+
+        # Usar list comprehension para construir la lista de usuarios
+        users_data = [
+            {
+                'user': user_session.user.username,
+                'login_time': user_session.login_time,
+                'logout_time': user_session.logout_time,
+                'session_duration': user_session.session_duration.total_seconds() if user_session.session_duration else None,
+                'button_stats': {
+                    1: next((stat.click_count for stat in ButtonClickStats.objects.filter(user=user_session.user, button_name=1)), 0),
+                    2: next((stat.click_count for stat in ButtonClickStats.objects.filter(user=user_session.user, button_name=2)), 0),
+                }
+            }
+            for user_session in user_sessions
+        ]
+
+        # Responder con los datos de todos los usuarios
+        return Response({
+            'users': users_data
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def post_data(request):
     try:
-        print(request.data)
-
         # Procesar el logo si está en formato Base64
         logo_data = request.data.get('logo', None)
         logo_file = None

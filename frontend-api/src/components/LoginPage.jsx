@@ -28,6 +28,7 @@ const LoginPage = () => {
         localStorage.setItem('user_id', data.user_id);
         localStorage.setItem('username', data.user);
         // Redirige dependiendo si es admin o no
+        console.log(data.user_id);
         if (data.is_admin) {
           navigate('/admin');  // Página de admin
         } else {

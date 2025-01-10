@@ -13,17 +13,59 @@ const AdminConsole = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/v1/user-stats/', {
-          method: 'GET',
+        const response = await fetch('http://localhost:8000/api/v1/get_data_users/', {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           },
         });
         const data = await response.json();
+
         if (response.ok) {
-          setUserData(data.userData);  // Configura los datos de los usuarios
-          setButtonStats(data.buttonStats);  // Configura las estadísticas de los botones
+          // Usamos un objeto para agrupar las sesiones por usuario y sumar los clics
+          const userMap = {};
+
+          data.users.forEach(user => {
+            // Si el usuario ya está en el objeto, agregamos la nueva sesión y los clics
+            if (!userMap[user.user]) {
+              userMap[user.user] = {
+                user: user.user,
+                loginDate: user.login_time,
+                sessionTime: user.session_duration,
+                buttonStats: { button1: 0, button2: 0 },
+              };
+            }
+
+            // Sumamos los clics de los botones
+            userMap[user.user].buttonStats.button1 += user.button_stats[1];
+            userMap[user.user].buttonStats.button2 += user.button_stats[2];
+
+            // Si la sesión tiene más tiempo, actualizamos la duración de la sesión
+            if (user.session_duration && (!userMap[user.user].sessionTime || user.session_duration > userMap[user.user].sessionTime)) {
+              userMap[user.user].sessionTime = user.session_duration;
+            }
+          });
+
+          // Convertimos el objeto en un array para usarlo en la tabla
+          const userDataArray = Object.values(userMap).map(user => ({
+            key: user.user, // Clave única para la fila de la tabla
+            name: user.user,
+            loginDate: user.loginDate,
+            sessionTime: user.sessionTime,
+            button1: user.buttonStats.button1,
+            button2: user.buttonStats.button2,
+          }));
+
+          setUserData(userDataArray);
+
+          // Calculamos los clics totales para cada botón para el gráfico
+          const totalClicks = {
+            button1: Object.values(userMap).reduce((acc, user) => acc + user.buttonStats.button1, 0),
+            button2: Object.values(userMap).reduce((acc, user) => acc + user.buttonStats.button2, 0),
+          };
+
+          setButtonStats(totalClicks);
         } else {
           console.error('Error al cargar los datos');
         }
@@ -81,11 +123,11 @@ const AdminConsole = () => {
   return (
     <div style={{ padding: '20px', justifyItems: 'start' }}>
       <Button
-          type="default"
-          style={{ margin: '10px', width: '10%' }}
-          danger
-          onClick={handleLogout}
-        >
+        type="default"
+        style={{ margin: '10px', width: '10%' }}
+        danger
+        onClick={handleLogout}
+      >
         <LogoutOutlined />
       </Button>
       <Row gutter={[16, 16]}>
