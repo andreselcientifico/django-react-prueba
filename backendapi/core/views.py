@@ -37,9 +37,8 @@ def logout_user(request):
     try:
         # Obtener el user_id validado
         user_id = serializer.validated_data['user_id']
-
         # Verificar si el usuario tiene una sesión activa
-        user_session = UserSession.objects.filter(user_id=user_id, logout_time__isnull=True).latest('login_time')
+        user_session = UserSession.objects.filter(user_id=str(user_id).replace('-',''), logout_time__isnull=True).latest('login_time')
 
         # Actualizar los datos de logout y duración de la sesión
         user_session.logout_time = now()
@@ -99,7 +98,6 @@ def get_data(request):
         # Buscar la configuración de la landing page
         landing_page_config = LandingPageConfig.objects.get(user_id=user_id)
 
-        print(landing_page_config)
         # Construir la URL completa del logo (si existe)
         logo_url = request.build_absolute_uri(landing_page_config.logo.url) if landing_page_config.logo else None
         
@@ -112,7 +110,6 @@ def get_data(request):
 
     except LandingPageConfig.DoesNotExist:
         # Si no existe configuración, devolver valores vacíos
-        print("No existe configuración")
         return Response({
             'title': '',
             'description': '',
@@ -126,31 +123,26 @@ def get_data(request):
 @api_view(['POST'])
 def get_data_users(request):
     try:
-        # Obtener todos los usuarios que tienen sesiones activas
-        user_sessions = UserSession.objects.all()  # O puedes filtrarlo según tu lógica
-
-        # Usar list comprehension para construir la lista de usuarios
-        users_data = [
-            {
-                'user': user_session.user.username,
-                'login_time': user_session.login_time,
-                'logout_time': user_session.logout_time,
-                'session_duration': user_session.session_duration.total_seconds() if user_session.session_duration else None,
-                'button_stats': {
-                    1: next((stat.click_count for stat in ButtonClickStats.objects.filter(user=user_session.user, button_name=1)), 0),
-                    2: next((stat.click_count for stat in ButtonClickStats.objects.filter(user=user_session.user, button_name=2)), 0),
-                }
-            }
-            for user_session in user_sessions
-        ]
-
-        # Responder con los datos de todos los usuarios
         return Response({
-            'users': users_data
+            'users': [
+                {
+                    'user': user_session.user.username,
+                    'login_time': user_session.login_time,
+                    'logout_time': user_session.logout_time,
+                    'session_duration': user_session.session_duration.total_seconds() if user_session.session_duration else None,
+                    'button_stats': {
+                        1: next((stat.click_count for stat in ButtonClickStats.objects.filter(
+                            user_id=str(user_session.user.id).replace('-', ''), button_name='button1')), 0),
+                        2: next((stat.click_count for stat in ButtonClickStats.objects.filter(
+                            user_id=str(user_session.user.id).replace('-', ''), button_name='button2')), 0),
+                    }
+                }
+                for user_session in UserSession.objects.filter(logout_time__isnull=False)
+            ]
         }, status=status.HTTP_200_OK)
-
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': f'Ocurrió un error: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Row, Col, Card, Spin } from 'antd'; // Agregado Spin para mostrar carga
 import { Bar } from '@ant-design/charts';
-import { useNavigate } from 'react-router-dom';
 import { LogoutOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { handleLogout } from '../api/conn.api';
 
 const AdminConsole = () => {
   const [userData, setUserData] = useState([]);  // Para los datos de usuarios
@@ -103,30 +104,13 @@ const AdminConsole = () => {
     return <Spin size="large" />; // Muestra un spinner mientras se cargan los datos
   };
 
-  const handleLogout = async () => {
-    await fetch('http://localhost:8000/api/v1/logout/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${localStorage.getItem('access_token')}`,
-      },
-      body: JSON.stringify({
-        user_id: localStorage.getItem('username'),
-      }),
-    });
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('is_admin');
-    navigate('/');
-  };
-
   return (
     <div style={{ padding: '20px', justifyItems: 'start' }}>
       <Button
         type="default"
         style={{ margin: '10px', width: '10%' }}
         danger
-        onClick={handleLogout}
+        onClick={() =>handleLogout(navigate)}
       >
         <LogoutOutlined />
       </Button>
