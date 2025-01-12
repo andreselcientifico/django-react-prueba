@@ -1,6 +1,7 @@
 asgiref==3.8.1
 certifi==2024.12.14
 charset-normalizer==3.4.1
+colorama==0.4.6
 coreapi==2.3.3
 coreschema==0.0.4
 Django==5.1.4
@@ -19,6 +20,7 @@ python-dotenv==1.0.1
 requests==2.32.3
 setuptools==75.7.0
 sqlparse==0.5.3
+tqdm==4.67.1
 tzdata==2024.2
 uritemplate==4.1.1
 urllib3==2.3.0
