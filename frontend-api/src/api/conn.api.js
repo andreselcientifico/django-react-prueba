@@ -21,7 +21,6 @@ export const handleLogin = async (username, password, navigate) => {
         localStorage.setItem('user_id', data.user_id);
         localStorage.setItem('username', data.user);
         // Redirige dependiendo si es admin o no
-        console.log(data.user_id);
         if (data.is_admin) {
           navigate('/admin');  // Página de admin
         } else {
@@ -56,7 +55,7 @@ export const handleLogout = async (navigate) => {
   };
 
   // Registrar clic de botón en el backend
-export const handleButtonClick = async (buttonName) => {
+export const handleButtonClick = async (buttonName, config, setConfig) => {
     const response = await fetch('http://localhost:8000/api/v1/register-button-click/', {
       method: 'POST',
       headers: {
@@ -67,7 +66,6 @@ export const handleButtonClick = async (buttonName) => {
     });
 
     if (buttonName === 'button1') {
-      console.log(localStorage.getItem('access_token'))
       await fetch('http://localhost:8000/api/v1/get-data/', {
         method: 'POST',
         headers: {
@@ -102,8 +100,6 @@ export const handleButtonClick = async (buttonName) => {
         });
   
         if (response.ok) {
-          const data = await response.json();
-          console.log('Datos guardados correctamente:', data);
           alert('Datos guardados correctamente');
         } else {
           console.error('Error al guardar los datos:', response.status);
@@ -122,14 +118,14 @@ export const handleButtonClick = async (buttonName) => {
     }
   };
 
-export const handleInputChange = (e, field) => {
+export const handleInputChange = (e, field, setConfig, config) => {
     setConfig({
       ...config,
       [field]: e.target.value,
     });
   };
 
-export const handleLogoChange = (e) => {
+export const handleLogoChange = (e, setConfig, config) => {
     const file = e.file.originFileObj;
     const reader = new FileReader();
 
@@ -146,26 +142,34 @@ export const handleLogoChange = (e) => {
   };
 
 
-export const verify_token = async (token) => {
-    return  await fetch('http://localhost:8000/api/v1/verify-token/', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`,
-    },
-  });
-};
+export const verify_token = async () => {
+    return await fetch('http://localhost:8000/api/v1/verify-token/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${localStorage.getItem('access_token')}`,
+      },
+    });
+  };
+  
 
-export const get_data = async (token) => {
-    return await fetch('http://localhost:8000/api/v1/get-data/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
-        },
-        body: JSON.stringify({
-          user_id: localStorage.getItem('user_id'), 
-        }),
+export const get_data = async (setConfig) => {
+    await fetch('http://localhost:8000/api/v1/get-data/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${localStorage.getItem('access_token')}`,
+      },
+      body: JSON.stringify({
+        user_id : localStorage.getItem('user_id'), 
+      }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      setConfig(data);
+    })
+    .catch(error => {
+      console.error('Error fetching config:', error);
     });
 };
 

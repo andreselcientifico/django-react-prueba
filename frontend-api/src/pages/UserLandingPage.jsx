@@ -11,22 +11,13 @@ const UserLandingPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('access_token')
-        const response = verify_token(token);
-
+        const response = await verify_token();
         if (response.ok) {
-          const data = get_data(token)
-          .then(response => response.json())
-          .then(data => {
-            setConfig(data);
-          })
-          .catch(error => {
-            console.error('Error fetching config:', error);
-          });
+          get_data(setConfig);
         } else if (response.status === 401) {
-          // Si el token no es válido, redirigir al login
           history.push('/login');
         }
+
       } catch (error) {
         console.error('Error fetching config:', error);
         // Redirigir al login si ocurre un error
@@ -45,7 +36,7 @@ const UserLandingPage = () => {
           <img src={config.logo} alt="Logo" style={{ width: '100px', marginBottom: '20px' }} />
         ) : (
           <Upload
-            onChange={handleLogoChange}
+            onChange={(e) => handleLogoChange(e, setConfig, config)}
             showUploadList={false}
             customRequest={({ onSuccess }) => onSuccess()}
           >
@@ -55,20 +46,20 @@ const UserLandingPage = () => {
         <Input
           style={{ marginBottom: '10px' }}
           value={config.title}
-          onChange={(e) => handleInputChange(e, 'title')}
+          onChange={(e) => handleInputChange(e, 'title', setConfig, config)}
           placeholder="Título"
         />
         <Input
           style={{ marginBottom: '10px' }}
           value={config.description}
-          onChange={(e) => handleInputChange(e, 'description')}
+          onChange={(e) => handleInputChange(e, 'description', setConfig, config)}
           placeholder="Descripción"
         />
         <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px' }}>
-          <Button type="primary" onClick={() => handleButtonClick('button1')}>
+          <Button type="primary" onClick={() => handleButtonClick('button1', config, setConfig)}>
             Cargar
           </Button>
-          <Button type="primary" onClick={() => handleButtonClick('button2')}>
+          <Button type="primary" onClick={() => handleButtonClick('button2', config, setConfig)}>
             Guardar
           </Button>
         </div>

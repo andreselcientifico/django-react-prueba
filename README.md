@@ -39,7 +39,7 @@ pip install -r requirements.txt
 Crea un archivo `.env` en el directorio del backend y define la clave secreta de Django:
 
 ```env
-DJANGO_KEY=<TU_SECRET_KEY>
+DJANGO-KEY=<TU_SECRET_KEY>
 ```
 
 #### c. Migrar la base de datos

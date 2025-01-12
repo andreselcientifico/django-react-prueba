@@ -12,13 +12,23 @@ from django.utils.timezone import now
 @api_view(['POST'])
 def login(request):
     # Autenticación del usuario
-    User = get_object_or_404(CustomUser, username=request.data['username'])
+    try:
+        User = get_object_or_404(CustomUser, username=request.data['username'])
+    except Exception as e:
+        return Response({"error": f"Error al obtener el usuario: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    
     if not User.check_password(request.data['password']):
         return Response({"error": "Contraseña incorrecta"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    UserSession.objects.create(user=User, login_time=now())
-
-    token, created = Token.objects.get_or_create(user=User)
+    try:
+        session = UserSession.objects.get(user_id=User.id)
+        session.login_time = now()
+        session.save()
+    except Exception as e:
+        return Response({"error": f"Error al crear la sesión: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        token, created = Token.objects.get_or_create(user=User)
+    except Exception as e:
+        return Response({"error": f"Error al obtener el token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     return Response({
         'created' : created,
         'access': token.key,
@@ -38,12 +48,13 @@ def logout_user(request):
         # Obtener el user_id validado
         user_id = serializer.validated_data['user_id']
         # Verificar si el usuario tiene una sesión activa
-        user_session = UserSession.objects.filter(user_id=str(user_id).replace('-',''), logout_time__isnull=True).latest('login_time')
+        user_session = UserSession.objects.get(user_id=str(user_id).replace('-',''))
 
         # Actualizar los datos de logout y duración de la sesión
         user_session.logout_time = now()
         user_session.session_duration = user_session.logout_time - user_session.login_time
         user_session.save()
+        Token.objects.get(user=user_id).delete()
 
         return Response({'message': 'Logout exitoso'}, status=status.HTTP_200_OK)
 

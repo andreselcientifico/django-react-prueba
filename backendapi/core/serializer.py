@@ -54,11 +54,6 @@ class LandingPageConfigSerializer(serializers.Serializer):
                 return ContentFile(base64.b64decode(imgstr), name=f"logo.{format.split('/')[-1]}") 
             except Exception as e:
                 raise serializers.ValidationError(f"Error al procesar la imagen Base64: {str(e)}")
-
-        # Si no es Base64, devolvemos el valor tal cual, que podría ser una URL o campo vacío
-        elif value and value.startswith('http'):
-            return value  # Si ya es una URL, no hacemos ningún cambio
-
         return value
 
     def create(self, validated_data):

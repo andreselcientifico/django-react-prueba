@@ -11,7 +11,7 @@ class CustomUser(AbstractUser):
 
 # Modelo para registrar los eventos de los usuarios
 class UserSession(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     login_time = models.DateTimeField(default=now)
     logout_time = models.DateTimeField(null=True, blank=True)
     session_duration = models.DurationField(null=True, blank=True)
