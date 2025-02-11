@@ -1,5 +1,9 @@
-from rest_framework import serializers
 import base64
+import os
+import requests
+
+from rest_framework import serializers
+from django.conf import settings
 from django.core.files.base import ContentFile
 from .models import *
 
@@ -45,16 +49,47 @@ class LandingPageConfigSerializer(serializers.Serializer):
     logo = serializers.CharField(allow_blank=True, required=False)
 
     def validate_logo(self, value):
-        """Valida si el logo es una cadena Base64 o una URL, y lo procesa adecuadamente."""
-        if value and value.startswith('data:image'):
-            try:
-                # Separar el formato y los datos de la imagen Base64
-                format, imgstr = value.split(';base64,')
-                # Decodificar la imagen y convertirla en un archivo
-                return ContentFile(base64.b64decode(imgstr), name=f"logo.{format.split('/')[-1]}") 
-            except Exception as e:
-                raise serializers.ValidationError(f"Error al procesar la imagen Base64: {str(e)}")
-        return value
+        """Valida si el logo es una URL o una imagen Base64.
+        Si es una URL, descarga la imagen y la guarda de nuevo.
+        Si es Base64, elimina la imagen anterior y guarda la nueva."""
+        
+        if value.startswith("http://localhost:8000/media/"):
+            # Extraer solo el nombre de la imagen desde la URL
+            image_name = value.split("/")[-1]
+            image_path = os.path.join(settings.MEDIA_ROOT, "logos", image_name)
+
+            # Verificar si la imagen existe antes de descargarla
+            if not os.path.exists(image_path):
+                try:
+                    response = requests.get(value)
+                    response.raise_for_status()
+                    
+                    # Guardar la imagen descargada en la carpeta de logos
+                    with open(image_path, "wb") as f:
+                        f.write(response.content)
+                except Exception as e:
+                    raise serializers.ValidationError(f"Error al descargar la imagen: {str(e)}")
+
+            return f"logos/{image_name}"  # Retornar solo el path relativo a media/
+
+        try:
+            # Si es Base64, primero eliminar la imagen anterior
+            if hasattr(self.instance, "logo") and self.instance.logo:
+                old_logo_path = str(self.instance.logo.path)
+                if os.path.exists(old_logo_path):
+                    os.remove(old_logo_path)  # Eliminar imagen anterior
+
+            # Separar el formato y los datos de la imagen Base64
+            format, imgstr = value.split(';base64,')
+            ext = format.split('/')[-1]  # Obtener extensión (ejemplo: png, jpg)
+
+            # Guardar la nueva imagen con un nombre único
+            return ContentFile(base64.b64decode(imgstr), name=f"logos/logo_{os.urandom(8).hex()}.{ext}")
+
+        except Exception as e:
+            raise serializers.ValidationError(f"Error al procesar la imagen Base64: {str(e)}")
+
+        return value  # Retornar el valor original si no se modificó
 
     def create(self, validated_data):
         """Crea o actualiza la configuración de la página de aterrizaje."""

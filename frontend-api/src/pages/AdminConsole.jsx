@@ -24,47 +24,75 @@ const AdminConsole = () => {
         const data = await response.json();
 
         if (response.ok) {
-          // Usamos un objeto para agrupar las sesiones por usuario y sumar los clics
-          const userMap = {};
+          const userMap = {};  // Mapeo de usuarios
+          const buttonNames = new Set();  // Conjunto para botones dinámicos
 
           data.users.forEach(user => {
-            // Si el usuario ya está en el objeto, agregamos la nueva sesión y los clics
             if (!userMap[user.user]) {
               userMap[user.user] = {
                 user: user.user,
                 loginDate: user.login_time,
                 sessionTime: user.session_duration,
-                buttonStats: { button1: 0, button2: 0 },
+                buttonStats: {},
               };
             }
 
-            // Sumamos los clics de los botones
-            userMap[user.user].buttonStats.button1 += user.button_stats[1];
-            userMap[user.user].buttonStats.button2 += user.button_stats[2];
+            // Recorrer dinámicamente todos los botones
+            Object.keys(user.button_stats).forEach(button => {
+              if (!userMap[user.user].buttonStats[button]) {
+                userMap[user.user].buttonStats[button] = 0;
+              }
+              userMap[user.user].buttonStats[button] += user.button_stats[button];
+              buttonNames.add(button);  // Agregar al conjunto de botones
+            });
 
-            // Si la sesión tiene más tiempo, actualizamos la duración de la sesión
+            // Actualizar la sesión más larga
             if (user.session_duration && (!userMap[user.user].sessionTime || user.session_duration > userMap[user.user].sessionTime)) {
               userMap[user.user].sessionTime = user.session_duration;
             }
           });
 
-          // Convertimos el objeto en un array para usarlo en la tabla
-          const userDataArray = Object.values(userMap).map(user => ({
-            key: user.user, // Clave única para la fila de la tabla
-            name: user.user,
-            loginDate: user.loginDate,
-            sessionTime: user.sessionTime,
-            button1: user.buttonStats.button1,
-            button2: user.buttonStats.button2,
-          }));
+          // Construcción dinámica de columnas de la tabla
+          const columns = [
+            { title: 'Nombre', dataIndex: 'name', key: 'name' },
+            { title: 'Inicio de Sesión', dataIndex: 'loginDate', key: 'loginDate' },
+            { title: 'Tiempo', dataIndex: 'sessionTime', key: 'sessionTime' },
+            ...Array.from(buttonNames).map(button => ({
+              title: `Botón ${button}`,
+              dataIndex: button,
+              key: button,
+            })),
+          ];
+
+          const userDataArray = Object.values(userMap).map(user => {
+            const row = {
+              key: user.user,
+              name: user.user,
+              loginDate: user.loginDate,
+              sessionTime: user.sessionTime,
+            };
+
+            // Agregar los botones detectados dinámicamente
+            Array.from(buttonNames).forEach(button => {
+              row[button] = user.buttonStats[button] || 0;
+            });
+
+            return row;
+          });
 
           setUserData(userDataArray);
+          setColumns(columns);
 
-          // Calculamos los clics totales para cada botón para el gráfico
-          const totalClicks = {
-            button1: Object.values(userMap).reduce((acc, user) => acc + user.buttonStats.button1, 0),
-            button2: Object.values(userMap).reduce((acc, user) => acc + user.buttonStats.button2, 0),
-          };
+          // Generar estadísticas para los gráficos
+          const totalClicks = {};
+          Object.values(userMap).forEach(user => {
+            Object.keys(user.buttonStats).forEach(button => {
+              if (!totalClicks[button]) {
+                totalClicks[button] = 0;
+              }
+              totalClicks[button] += user.buttonStats[button];
+            });
+          });
 
           setButtonStats(totalClicks);
         } else {
@@ -73,35 +101,26 @@ const AdminConsole = () => {
       } catch (error) {
         console.error('Hubo un error en la solicitud:', error);
       } finally {
-        setLoading(false);  // Desactiva el estado de carga cuando los datos se hayan cargado
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, []);  // La solicitud solo se realiza una vez cuando se monta el componente
+  }, []);
 
-  const columns = [
-    { title: 'Nombre', dataIndex: 'name', key: 'name' },
-    { title: 'Inicio de Sesión', dataIndex: 'loginDate', key: 'loginDate' },
-    { title: 'Tiempo', dataIndex: 'sessionTime', key: 'sessionTime' },
-    { title: 'Botón 1', dataIndex: 'button1', key: 'button1' },
-    { title: 'Botón 2', dataIndex: 'button2', key: 'button2' },
-  ];
+  const [columns, setColumns] = useState([]);
 
-  const chartData = [
-    { button: 'Botón 1', clicks: buttonStats.button1 },
-    { button: 'Botón 2', clicks: buttonStats.button2 },
-  ];
+  const chartData = Object.keys(buttonStats).map(button => ({
+    button: `Botón ${button}`,
+    clicks: buttonStats[button],
+  }));
 
-  const barConfig = { data: chartData, xField: 'button', yField: 'clicks', columnWidthRatio: 0.8 };
-  const pieConfig = { data: chartData, angleField: 'clicks', colorField: 'button' };
-  const lineConfig = { data: chartData, xField: 'button', yField: 'clicks' };
   const pieData = chartData.map(item => ({
     type: item.button,
     value: item.clicks,
   }));
 
-  if (loading) return <Spin size="large" style={{ display: 'flex', justifyContent: 'center', marginTop: 50 }} />;
+   if (loading) return <Spin size="large" style={{ display: 'flex', justifyContent: 'center', marginTop: 50 }} />;
 
   return (
     <div style={{ padding: 20, backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
