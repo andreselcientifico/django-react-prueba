@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Table, Row, Col, Card, Spin } from 'antd'; // Agregado Spin para mostrar carga
-import { Bar } from '@ant-design/charts';
+import { Button, Table, Row, Col, Card, Spin } from 'antd';
+import { Bar, Pie, Line } from '@ant-design/charts';
 import { LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { handleLogout } from '../api/conn.api';
@@ -93,34 +93,38 @@ const AdminConsole = () => {
     { button: 'Botón 2', clicks: buttonStats.button2 },
   ];
 
-  const config = {
-    data: chartData,
-    xField: 'button',
-    yField: 'clicks',
-    columnWidthRatio: 0.8,
-  };
+  const barConfig = { data: chartData, xField: 'button', yField: 'clicks', columnWidthRatio: 0.8 };
+  const pieConfig = { data: chartData, angleField: 'clicks', colorField: 'button' };
+  const lineConfig = { data: chartData, xField: 'button', yField: 'clicks' };
+  const pieData = chartData.map(item => ({
+    type: item.button,
+    value: item.clicks,
+  }));
 
-  if (loading) {
-    return <Spin size="large" />; // Muestra un spinner mientras se cargan los datos
-  };
+  if (loading) return <Spin size="large" style={{ display: 'flex', justifyContent: 'center', marginTop: 50 }} />;
 
   return (
-    <div style={{ padding: '20px', justifyItems: 'start' }}>
-      <Button
-        type="default"
-        style={{ margin: '10px', width: '10%' }}
-        danger
-        onClick={() =>handleLogout(navigate)}
-      >
-        <LogoutOutlined />
+    <div style={{ padding: 20, backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+      <Button type="primary" danger icon={<LogoutOutlined />} onClick={() => handleLogout(navigate)} style={{ marginBottom: 20 }}>
+        Salir
       </Button>
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Table columns={columns} dataSource={userData} pagination={false} />
+          <Table columns={columns} dataSource={userData} pagination={false} bordered />
         </Col>
-        <Col span={8}>
-          <Card title="Gráfica de Botones">
-            <Bar {...config} />
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Gráfica de Barras">
+            <Bar data={chartData} xField="button" yField="clicks" columnWidthRatio={0.8} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Gráfica Circular">
+            <Pie data={pieData} angleField="value" colorField="type" radius={0.9} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Gráfica de Línea">
+            <Line data={chartData} xField="button" yField="clicks" />
           </Card>
         </Col>
       </Row>

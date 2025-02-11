@@ -20,9 +20,10 @@ def login(request):
     if not User.check_password(request.data['password']):
         return Response({"error": "Contraseña incorrecta"}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        session = UserSession.objects.get(user_id=User.id)
-        session.login_time = now()
-        session.save()
+        session, created = UserSession.objects.get_or_create(user=User, defaults={'login_time': now()})
+        if not created:
+            session.login_time = now()
+            session.save()
     except Exception as e:
         return Response({"error": f"Error al crear la sesión: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
     try:
