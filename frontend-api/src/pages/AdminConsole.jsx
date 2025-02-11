@@ -129,7 +129,7 @@ const AdminConsole = () => {
       </Button>
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Table columns={columns} dataSource={userData} pagination={false} bordered />
+          <Table columns={columns} dataSource={userData} pagination={ false }  scroll={{ x: 'max-content', y: 300 }} bordered />
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Card title="Gráfica de Barras">
